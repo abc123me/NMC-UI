@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Library-Version: 1.0
+Library-Path: test.TelemetryGeneratorTest
+Library-Conflicts: test.TelemetryGeneratorTest

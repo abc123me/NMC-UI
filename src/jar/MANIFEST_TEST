@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Library-Version: 1.0
+Library-Name: Test library
+Library-Path: lib.TestLibrary

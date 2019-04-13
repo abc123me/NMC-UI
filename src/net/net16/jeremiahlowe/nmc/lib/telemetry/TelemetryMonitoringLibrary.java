@@ -24,7 +24,11 @@ public abstract class TelemetryMonitoringLibrary extends NMCLibrary implements I
 	public TelemetryMonitoringLibrary(NMCInstance instance, String name, int updateRate) {
 		super(instance);
 		subsystemName = name;
-		subsystemModule = generateSubsystemModule();
+		subsystemModule = new Module() {
+			@Override public String getModuleName() { return subsystemName; }
+			@Override public JComponent getListComponent() { return getModuleListComponent(); }
+			@Override public void onModuleRemoved() { stopUpdater(); }
+		};
 		telemetryPanel = new JPanel(new BorderLayout());
 		telemetryLabels = new HashMap<String, JLabel>();
 		updateTimer = new Timer(updateRate, new ActionListener() {
@@ -32,7 +36,6 @@ public abstract class TelemetryMonitoringLibrary extends NMCLibrary implements I
 				update();
 			}
 		});
-		updateTimer.start();
 	}
 	
 	@Override public void onLibraryLoaded() {
@@ -51,6 +54,13 @@ public abstract class TelemetryMonitoringLibrary extends NMCLibrary implements I
 	}
 	@Override public String getDisplayName() {
 		return subsystemName;
+	}
+	
+	public final void startUpdater() {
+		updateTimer.start();
+	}
+	public final void stopUpdater() {
+		updateTimer.stop();
 	}
 	
 	protected abstract void onUpdate();
@@ -72,9 +82,9 @@ public abstract class TelemetryMonitoringLibrary extends NMCLibrary implements I
 	protected void showTelemetry() {
 		String[] keys = getTelemetryKeys();
 		for(String key : keys) {
-			if(key == null) continue;
 			JLabel lbl = telemetryLabels.get(key);
-			lbl.setText(key + ": " + getCurrentValue(key));
+			if(lbl == null) continue;
+			else lbl.setText(key + ": " + getCurrentValue(key));
 		}
 		telemetryPanel.invalidate();
 	}
@@ -87,12 +97,5 @@ public abstract class TelemetryMonitoringLibrary extends NMCLibrary implements I
 	private void onModuleClicked() {
 		if(instance.ui != null)
 			instance.ui.setMainView(this, telemetryPanel);
-		update();
-	}
-	private Module generateSubsystemModule() {
-		return new Module() {
-			@Override public String getModuleName() { return subsystemName; }
-			@Override public JComponent getListComponent() { return getModuleListComponent(); }
-		};
 	}
 }

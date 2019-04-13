@@ -38,9 +38,9 @@ public class TelemetryGeneratorTest extends TelemetryMonitoringLibrary {
 	}
 	@Override public Object getValueAt(String key, long epoch, short millis) {
 		double time = epoch + millis / 1000.0;
-		if(SINE_KEY.equals(key)) return Math.sin(time);
-		if(COSINE_KEY.equals(key)) return Math.cos(time);
-		if(TAN_KEY.equals(key)) return Math.tan(time);
+		if(SINE_KEY.contentEquals(key)) return Math.sin(time);
+		if(COSINE_KEY.contentEquals(key)) return Math.cos(time);
+		if(TAN_KEY.contentEquals(key)) return Math.tan(time);
 		return null;
 	}
 	@Override protected void onUpdate() {

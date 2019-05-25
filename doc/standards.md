@@ -1,4 +1,4 @@
-# NMC Programming standards V0.1
+# NMC standards V1.0
 
 <center>Jeremiah Lowe, Programmer</center>
 

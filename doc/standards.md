@@ -4,7 +4,7 @@
 
 ## MySQL database
 ### Database configuration
- - All cables **MUST** be colored **RED** and labeled on each end, if not the cable **WILL** be disconnected form the server
+ - All cables **MUST** be labeled on each end, if not the cable will be disconnected form the server
  - Server must have ethernet failover configured
  - Database port is default (3306 TCP)
  - Database IP will be the interface connected to the server's closed subnet

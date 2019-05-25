@@ -1,7 +1,6 @@
-# NMC Programming standards
+# NMC Programming standards V0.1
 
 <center>Jeremiah Lowe, Programmer</center>
-<center>Version 0.1</center>
 
 ## MySQL database
 ### Database configuration

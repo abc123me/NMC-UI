@@ -28,7 +28,8 @@
  - Usernames must follow standard linux username format (`^[a-z0-9_]+$`, alphanumeric, lowercase, underscores)
  
 ### Database security
- - Subsystems should each have thier own login credentials and only access to thier table, eg: `GRANT feed@feed_IP * ON FEED_TBL;`
+ - Subsystems should each have thier own login credentials and only access to thier table
+    - Achieved via `GRANT` command, for instance `GRANT feed@feed_IP * ON FEED_TBL;`
     - Prevents a subsystem from accidentally deleting or overwriting another subsystems data
     - If the credentials are leaked the entire system don't have to re-done
  - Database's subnet to be **COMPLETELY** closed from outside world

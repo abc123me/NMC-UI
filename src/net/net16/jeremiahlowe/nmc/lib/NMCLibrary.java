@@ -27,15 +27,15 @@ public abstract class NMCLibrary {
 		for(Module m : modules)
 			instance.removeModule(m);
 	}
-	public void onLibraryUnload() {}
-	public void onLibraryLoaded() {}
+	public void onLibraryUnload() {};
+	public void onLibraryLoaded() {};
 	public abstract String getDisplayName();
 	
-	protected void addModule(Module m) {
+	protected final void addModule(Module m) {
 		modules.add(m);
 		instance.addModule(m);
 	}
-	protected void removeModule(Module m) {
+	protected final void removeModule(Module m) {
 		modules.remove(m);
 		instance.removeModule(m);
 	}

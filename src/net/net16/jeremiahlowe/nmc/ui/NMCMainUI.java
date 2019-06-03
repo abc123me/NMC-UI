@@ -1,12 +1,10 @@
 package net.net16.jeremiahlowe.nmc.ui;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
+import java.awt.event.*;
+import java.io.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -14,18 +12,15 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import net.net16.jeremiahlowe.nmc.NMCInstance;
 import net.net16.jeremiahlowe.nmc.lib.*;
 import net.net16.jeremiahlowe.shared.*;
-import net.net16.jeremiahlowe.shared.ansi.AnsiTextPane;
 
 public class NMCMainUI extends JPanel{
-	
 	public static void main(String[] args) throws LibraryException {
-		JFrame fr = new JFrame();
-		fr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		fr.setSize(800, 600);
-		SwingUtility.centerJFrame(fr);
-		NMCMainUI ui = new NMCMainUI();
-		fr.setContentPane(ui);
-		fr.setVisible(true);
+		NMCInstance.makeGUI(800, 600);
+		Logger.getGlobal().info("test!");
+		System.out.println("stdout: test");
+		System.err.println("stderr: test");
+		Logger.getGlobal().warning("test!");
+		Logger.getGlobal().severe("test!");
 	}
 	
 	public final NMCInstance ins;
@@ -33,30 +28,53 @@ public class NMCMainUI extends JPanel{
 	
 	private NMCLibrary mainPanelOwner = null;
 	private ArrayList<Duplet<NMCLibrary, JMenuItem>> libraries = new ArrayList<>(); 
+	private boolean logModuleChanges = true;
+	private boolean logLibraryChanges = true;
+	private float mapPercent = 0.2f;
+	private float logPercent = 0.25f;
 	
-	private ModuleAccessPanel map = new ModuleAccessPanel();
-	private JPanel mp = new JPanel();
+	private ModuleAccessPanel map;
+	private JPanel mainPanel = new JPanel();
 	private JPanel oldMainPanel = null;
-	private AnsiTextPane loggingPane = null;
+	private LoggingPane loggingPane = null;
 	
 	private JMenuBar menuBar = new JMenuBar();
+
 	private JMenu fileMenu = new JMenu("File");
 	private JMenuItem fileMenuLoadConfig = new JMenuItem("Load config");
 	private JMenuItem fileMenuSaveConfig = new JMenuItem("Save config");
 	private JMenuItem fileMenuNewConfig = new JMenuItem("New config");
 	private JMenuItem fileMenuLoadLibrary = new JMenuItem("Load library");
 	private JMenu fileMenuUnloadLibraryMenu = new JMenu("Unload library", false);
+	
 	private JMenu editMenu = new JMenu("Edit");
+	private JMenu editMenuTimezoneMenu = new JMenu("Set timezone");
+	
 	private JMenu loggingMenu = new JMenu("Logging");
 	private JCheckBoxMenuItem loggingMenuShowLogs = new JCheckBoxMenuItem("Show logs");
-	private JCheckBoxMenuItem loggingMenuShowANSI = new JCheckBoxMenuItem("Use ANSI");
+	private JCheckBoxMenuItem loggingMenuLogModules = new JCheckBoxMenuItem("Log module changes", logModuleChanges);
+	private JCheckBoxMenuItem loggingMenuLogLibraries = new JCheckBoxMenuItem("Log library changes", logLibraryChanges);
 	private JMenu loggingMenuLogLevelsMenu = new JMenu("Set log level");
 	private JRadioButtonMenuItem[] loggingMenuLogLevelButtons;
 	private ButtonGroup loggingMenuLogLevelButtonGroup = new ButtonGroup();
 	
-	public NMCMainUI() {
+	public NMCMainUI(NMCInstance ins) { this(ins, true); }
+	public NMCMainUI(NMCInstance ins, boolean bind) {
+		if(ins == null)
+			throw new NullPointerException("NMCInstance cannot be null");
+		this.ins = ins;
 		setLayout(new BorderLayout());
-		mp.setLayout(new BorderLayout());
+		mainPanel.setLayout(new BorderLayout());
+		map = new ModuleAccessPanel(this);
+		//loggingPane.setEditable(false);
+		add(mainPanel, BorderLayout.CENTER);
+		if(ins.logger != null) {
+			loggingPane = new LoggingPane(ins.logger);
+			mainPanel.add(loggingPane, BorderLayout.SOUTH);
+		} else {
+			System.err.println("NMCInstance has no logger, ignoring it");
+			loggingPane = null;
+		}
 		add(map, BorderLayout.WEST);
 		initFileMenu();
 		initEditMenu();
@@ -65,35 +83,49 @@ public class NMCMainUI extends JPanel{
 		menuBar.add(editMenu);
 		menuBar.add(loggingMenu);
 		add(menuBar, BorderLayout.NORTH);
-		ins = new NMCInstance(map, this);
-		Dimension d = map.getPreferredSize();
-		d.width += 50; //Add 50 to make it look nicer
-		map.setPreferredSize(d);
+		updateSizes();
+		if(loggingPane != null) {
+			loggingPane.setGlobalBackground(getBackground().brighter());
+			loggingPane.setEditable(false);
+		}
+		if(bind) ins.bindUI(this);
+	}
+	public void updateSizes() {
+		Dimension mainPanelSize = mainPanel.getSize();
+		Dimension d = null, mainSize = getSize();
+		if(loggingPane != null) {
+			d = loggingPane.getPreferredSize();
+			d.height = Math.round(mainPanelSize.height * logPercent);
+			loggingPane.setPreferredSize(d);
+		}
+		if(map != null) {
+			d = map.getPreferredSize();
+			d.width = Math.round(mainSize.width * mapPercent);
+			map.setPreferredSize(d);
+		}
 	}
 	
+	/* =====================================
+	 *        Library UI control shit
+	 * ===================================== */
 	public void setMainView(NMCLibrary user, JPanel c) {
-		if(oldMainPanel != null) remove(oldMainPanel);
+		if(oldMainPanel != null) mainPanel.remove(oldMainPanel);
 		mainPanelOwner = user;
-		add(c, BorderLayout.CENTER);
-		c.revalidate();
+		mainPanel.add(c, BorderLayout.CENTER);
 		oldMainPanel = c;
+		mainPanel.validate();
 	}
 	public void clearMainView() {
-		if(oldMainPanel != null) remove(oldMainPanel);
+		if(oldMainPanel != null) mainPanel.remove(oldMainPanel);
 		oldMainPanel = null;
 		mainPanelOwner = null;
-		invalidate();
+		mainPanel.validate();
 	}
 	public void insertLibrary(NMCLibrary l) {
 		if(l == null)
 			throw new NullPointerException("Libray is null");
 		JMenuItem m = new JMenuItem(l.getDisplayName());
-		m.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				ins.unloadLibrary(l);
-			}
-		});
+		m.addActionListener((ActionEvent ae) -> { ins.unloadLibrary(l); });
 		fileMenuUnloadLibraryMenu.add(m);
 		libraries.add(new Duplet<NMCLibrary, JMenuItem>(l, m));
 		fileMenuUnloadLibraryMenu.setEnabled(true);
@@ -119,7 +151,25 @@ public class NMCMainUI extends JPanel{
 		if(libraries.size() <= 0)
 			fileMenuUnloadLibraryMenu.setEnabled(false);
 	}
-
+	public void removeModule(Module m) {
+		map.removeModule(m);
+		if(logModuleChanges)
+			ins.logger.info("Removed module: " + m.getModuleName());
+	}
+	public void addModule(Module m) {
+		map.addModule(m);
+		if(logModuleChanges)
+			ins.logger.info("Added module: " + m.getModuleName());
+	}
+	
+	/* ==================================
+	 *        Getters and setters
+	 * ================================== */
+	public ModuleAccessPanel getModuleAccessPanel() { return map; }
+	
+	/* ==================================
+	 *        UI initialization
+	 * ================================== */
 	private void initFileMenu() {
 		fileMenu.add(fileMenuLoadConfig);
 		fileMenu.add(fileMenuSaveConfig);
@@ -132,7 +182,12 @@ public class NMCMainUI extends JPanel{
 				File f = chooseFile(ui, null, "JAR files", "jar");
 				if(f == null) return;
 				try {
-					ins.loadLibraryFromJar(f);
+					Duplet<NMCLibrary, NMCLibraryInfo> d = ins.loadLibraryFromJar(f);
+					if(d == null) ins.logger.severe("Failed to load library, loadLibraryFromJar returned null!");
+					else if(d.a == null) ins.logger.severe("Failed to load library, library was null!");
+					else if(d.b == null) ins.logger.warning("Error loading library, library information was null!");
+					else if(logLibraryChanges) ins.logger.info("Loaded library " + d.a.getDisplayName());
+						
 				} catch (LibraryException e1) {
 					e1.printStackTrace();
 					JOptionPane.showMessageDialog(ui, e1.getLocalizedMessage(), "Error message", JOptionPane.ERROR_MESSAGE);
@@ -144,11 +199,26 @@ public class NMCMainUI extends JPanel{
 	}
 	private void initEditMenu() {
 		
+		initTimezoneMenu();
+	}
+	private void initTimezoneMenu() {
+		ButtonGroup timezoneBtnGroup = new ButtonGroup();
+		ArrayList<String> places = new ArrayList<String>();
+		editMenu.add(editMenuTimezoneMenu);
+		//TODO: this crap
 	}
 	private void initLoggingMenu() {
 		loggingMenu.add(loggingMenuShowLogs);
-		loggingMenu.add(loggingMenuShowANSI);
 		loggingMenu.add(loggingMenuLogLevelsMenu);
+		loggingMenu.add(loggingMenuLogModules);
+		loggingMenu.add(loggingMenuLogLibraries);
+		loggingMenuShowLogs.addActionListener((ActionEvent a) -> {
+			boolean s = loggingMenuShowLogs.isSelected();
+			loggingPane.setVisible(s);
+			validate();
+		});
+		loggingMenuLogLibraries.addActionListener((ActionEvent a) -> { logLibraryChanges = loggingMenuLogLibraries.isSelected(); });
+		loggingMenuLogModules.addActionListener((ActionEvent a) -> { logModuleChanges = loggingMenuLogModules.isSelected(); });
 		int l = NMCInstance.LOG_LEVELS.length;
 		loggingMenuLogLevelButtons = new JRadioButtonMenuItem[l];
 		Level selectedLevel = selectedLogger.getLevel();
@@ -159,14 +229,14 @@ public class NMCMainUI extends JPanel{
 			loggingMenuLogLevelButtons[i] = btn;
 			loggingMenuLogLevelsMenu.add(btn);
 			loggingMenuLogLevelButtonGroup.add(btn);
-			btn.addActionListener(new ActionListener() {
-				@Override public void actionPerformed(ActionEvent arg0) {
-					updateSelectedLogLevel(level);
-				}
-			});
+			btn.addActionListener((ActionEvent a) -> { updateSelectedLogLevel(level); });
 		}
 		updateSelectedLogLevel(selectedLevel);
 	}
+	
+	/* ==================================
+	 *           Random shit
+	 * ================================== */
 	private void updateSelectedLogLevel(Level to) {
 		selectedLogger.setLevel(to);
 		selectedLogger.info("Updated log level to: " + to.getLocalizedName());

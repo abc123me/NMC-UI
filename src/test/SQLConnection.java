@@ -50,17 +50,20 @@ public class SQLConnection {
 		return conn;
 	}
 	
-	private static final void safetyCheck(String sql) throws SQLException{
+	public static final String safetyCheck(String sql) throws SQLException{
 		if(sql == null)
 			throw new NullPointerException("SQL given is null");
+		sql = sql.trim();
+		if(sql.length() == 0)
+			throw new SQLException("SQL query is empty");
 		if(!sql.matches(SQL_SAFETY_REGEXP)) 
 			throw new SQLException("If I had a dollar for every SQL injection i've seen, a black hole would form from the gravitational attraction between the dollars");
-		
+		return sql;
 	}
 	public String[] getTableColumns(String table) throws SQLException {
 		safetyCheck(table);
 		Statement stmt = conn.createStatement();
-		String query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=\'" + table + "\'";
+		String query = "select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=\'" + table + "\'";
 		ResultSet res = stmt.executeQuery(query);
 		ArrayList<String> outlst = new ArrayList<String>();
 		while(res.next()) outlst.add(res.getString("COLUMN_NAME"));
@@ -69,7 +72,12 @@ public class SQLConnection {
 		return outlst.toArray(new String[0]);
 	}
 	public String[] getTableRow(String table, int row, String idColumnName, String idColumnValue) throws SQLException {
-		safetyCheck(table); safetyCheck(idColumnName); safetyCheck(idColumnValue);
+		table = safetyCheck(table);
+		idColumnName = safetyCheck(idColumnName);
+		idColumnValue = safetyCheck(idColumnValue);
 		throw new RuntimeException("Not yet implemented!"); //TODO: Implement this?
+	}
+	public ResultSet query(String q) throws SQLException {
+		return conn.createStatement().executeQuery(q);
 	}
 }

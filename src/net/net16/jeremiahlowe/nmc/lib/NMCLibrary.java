@@ -19,16 +19,14 @@ public abstract class NMCLibrary {
 	 * Return error string if there was an error
 	 * or returns null if there was no error.
 	 */
-	public String onLibraryLoad() {
-		return null;
-	}
+	public String onLibraryLoad() { return null; }
 	public final void preLibraryUnload() {
 		System.out.println("Unloading all modules");
 		for(Module m : modules)
 			instance.removeModule(m);
 	}
-	public void onLibraryUnload() {};
-	public void onLibraryLoaded() {};
+	public void onLibraryUnload() {}
+	public void onLibraryLoaded() {}
 	public abstract String getDisplayName();
 	
 	protected final void addModule(Module m) {

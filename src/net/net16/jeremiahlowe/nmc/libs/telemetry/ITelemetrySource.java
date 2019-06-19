@@ -1,4 +1,4 @@
-package net.net16.jeremiahlowe.nmc.lib.telemetry;
+package net.net16.jeremiahlowe.nmc.libs.telemetry;
 
 import java.util.Date;
 

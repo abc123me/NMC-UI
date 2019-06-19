@@ -11,6 +11,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import net.net16.jeremiahlowe.nmc.NMCInstance;
 import net.net16.jeremiahlowe.nmc.lib.*;
+import net.net16.jeremiahlowe.nmc.libs.telemetry.TelemetryMonitoringLibrary;
 import net.net16.jeremiahlowe.shared.*;
 
 public class NMCMainUI extends JPanel{
@@ -28,6 +29,7 @@ public class NMCMainUI extends JPanel{
 	
 	private NMCLibrary mainPanelOwner = null;
 	private ArrayList<Duplet<NMCLibrary, JMenuItem>> libraries = new ArrayList<>(); 
+	private ArrayList<IMainPanelListener> mainPanelListeners = new ArrayList<>();
 	private boolean logModuleChanges = true;
 	private boolean logLibraryChanges = true;
 	private float mapPercent = 0.2f;
@@ -114,12 +116,16 @@ public class NMCMainUI extends JPanel{
 		mainPanel.add(c, BorderLayout.CENTER);
 		oldMainPanel = c;
 		mainPanel.validate();
+		for(IMainPanelListener l : mainPanelListeners)
+			if(l != null) l.onMainPanelChanged(this, user, c);
 	}
 	public void clearMainView() {
 		if(oldMainPanel != null) mainPanel.remove(oldMainPanel);
 		oldMainPanel = null;
 		mainPanelOwner = null;
 		mainPanel.validate();
+		for(IMainPanelListener l : mainPanelListeners)
+			if(l != null) l.onMainPanelCleared(this);
 	}
 	public void insertLibrary(NMCLibrary l) {
 		if(l == null)
@@ -166,6 +172,12 @@ public class NMCMainUI extends JPanel{
 	 *        Getters and setters
 	 * ================================== */
 	public ModuleAccessPanel getModuleAccessPanel() { return map; }
+	public JMenuBar getMenuBar() { return menuBar; }
+	public JMenu getFileMenu() { return fileMenu; }
+	public JMenu getEditMenu() { return editMenu; }
+	public JMenu getLoggingMenu() { return loggingMenu; }
+	public void addMainPanelListener(IMainPanelListener l) { mainPanelListeners.add(l); }
+	public void removeMainPanelListener(IMainPanelListener l) { mainPanelListeners.remove(l); }
 	
 	/* ==================================
 	 *        UI initialization
